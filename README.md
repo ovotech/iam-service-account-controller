@@ -75,3 +75,17 @@ aws iam get-role --role-name kmi-sa_orion-security-engineering_test
 ```
 
 The ServiceAccount annotation is strictly validated to ensure users can't manage an IAM Role for another namespace.
+
+## Running it
+
+Not yet ready to run in cluster.
+
+To run locally, set your Scully environment and:
+
+```
+$ aws eks update-kubeconfig --name non-production-kmi-alpha
+
+$ OIDC_PROVIDER=$(aws eks describe-cluster --name non-production-kmi-alpha --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
+
+$ go run . -kubeconfig=$HOME/.kube/config -oidc-issuer-url $OIDC_PROVIDER
+```
