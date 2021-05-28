@@ -43,12 +43,12 @@ aws iam get-role --role-name kmi-sa_orion-security-engineering_test
             {
                 "Effect": "Allow",
                 "Principal": {
-                "Federated": "arn:aws:iam::1234567889012:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D"
+                    "Federated": "arn:aws:iam::1234567889012:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D"
                 },
                 "Action": "sts:AssumeRoleWithWebIdentity",
                 "Condition": {
-                "StringEquals": {
-                    "oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D:sub": "system:serviceaccount:bar:foo"
+                    "StringEquals": {
+                        "oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D:sub": "system:serviceaccount:bar:foo"
                 }
                 }
             }
