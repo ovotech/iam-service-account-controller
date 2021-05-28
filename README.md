@@ -2,7 +2,7 @@
 
 Kubernetes controller that automatically creates AWS IAM Roles for ServiceAccounts.
 
-Requires your EKS cluster to be configured for [IAM Roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+For EKS clusters configured for [IAM Roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
 
 ## Motivation
 
