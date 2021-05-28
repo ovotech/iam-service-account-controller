@@ -97,7 +97,7 @@ func init() {
 	)
 	flag.StringVar(
 		&oidcProvider,
-		"oidc-issuer-url",
+		"oidc-provider",
 		"",
 		"This should be the OIDC provider, for example: 'oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D'. You can get this with 'aws eks describe-cluster --name <cluster_name> --query \"cluster.identity.oidc.issuer\" --output text | sed -e \"s/^https:\\/\\///\"'.",
 	)

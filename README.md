@@ -85,5 +85,5 @@ $ aws eks update-kubeconfig --name non-production-kmi-alpha
 
 $ OIDC_PROVIDER=$(aws eks describe-cluster --name non-production-kmi-alpha --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
 
-$ go run . -kubeconfig=$HOME/.kube/config -oidc-issuer-url $OIDC_PROVIDER
+$ go run . -kubeconfig=$HOME/.kube/config -oidc-provider $OIDC_PROVIDER
 ```
