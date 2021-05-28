@@ -74,8 +74,6 @@ aws iam get-role --role-name kmi-sa_orion-security-engineering_test
 }
 ```
 
-The ServiceAccount annotation is strictly validated to ensure users can't manage an IAM Role for another namespace.
-
 ## Running it
 
 Not yet ready to run in cluster.

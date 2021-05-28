@@ -216,11 +216,6 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	// ServiceAccount's annotation doesn't match
 	//     (prefix_)namespace_name
 	// then we ignore the event.
-	//
-	// Security note:
-	// Our annotation check ensures the namespace in the IAM_ROLE_NAME matches the namespace from
-	// which this event originates. If someone sets an annotation with a role name for another
-	// namespace, that wouldn't get processed past this point.
 	if annotationValue, ok := sa.ObjectMeta.Annotations[serviceAccountAnnotationKey]; ok {
 		if annotationValue == c.iam.MakeRoleARN(
 			sa.ObjectMeta.Name,
