@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	awsiamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go"
-	iamerrors "github.com/ovotech/sa-iamrole-controller/pkg/iam/errors"
-	"github.com/ovotech/sa-iamrole-controller/pkg/ref"
+	iamerrors "github.com/serain/k8s-aws-iam-controller/pkg/iam/errors"
+	"github.com/serain/k8s-aws-iam-controller/pkg/ref"
 )
 
 const (
@@ -167,6 +167,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 // isManaged checks if an AWS IAM Role for the ServiceAccount namespace/name is managed by this
 // controller. This check is based on AWS tags.
 func (m *Manager) isManaged(name string, namespace string) (bool, error) {
+	// TODO check tags
 	_, err := m.GetRole(name, namespace)
 	if err != nil {
 		if iamerrors.IsNotFound(err) {
