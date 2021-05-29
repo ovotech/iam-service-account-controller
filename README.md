@@ -29,7 +29,7 @@ metadata:
 the controller will automatically create an IAM Role with an AssumeRolePolicyDocument allowing that ServiceAccount to assume the role:
 
 ```
-aws iam get-role --role-name kmi-sa_orion-security-engineering_test
+$ aws iam get-role --role-name k8s-sa_bar_foo
 {
     "Role": {
         "Path": "/",
