@@ -6,11 +6,15 @@ import (
 
 	kubeinformers "k8s.io/client-go/informers"
 
-	"github.com/ovotech/sa-iamrole-controller/pkg/iam"
-	"github.com/ovotech/sa-iamrole-controller/pkg/signals"
+	"github.com/ovotech/iam-service-account-controller/pkg/iam"
+	"github.com/ovotech/iam-service-account-controller/pkg/signals"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+)
+
+const (
+	controllerName = "iam-service-account-controller"
 )
 
 var (
@@ -40,6 +44,7 @@ func main() {
 	var iamManager *iam.Manager
 	if controllerWebIdTokenPath == "" {
 		iamManager = iam.NewManagerWithDefaultConfig(
+			controllerName,
 			iamRolePrefix,
 			awsRegion,
 			oidcProvider,
@@ -47,6 +52,7 @@ func main() {
 		)
 	} else {
 		iamManager = iam.NewManagerWithWebIdToken(
+			controllerName,
 			iamRolePrefix,
 			awsRegion,
 			oidcProvider,

@@ -16,26 +16,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	awsiamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go"
-	iamerrors "github.com/ovotech/sa-iamrole-controller/pkg/iam/errors"
-	"github.com/ovotech/sa-iamrole-controller/pkg/ref"
+	iamerrors "github.com/ovotech/iam-service-account-controller/pkg/iam/errors"
+	"github.com/ovotech/iam-service-account-controller/pkg/ref"
 )
 
 const (
 	clusterTagKey   = "role.k8s.aws/cluster"
 	managedByTagKey = "role.k8s.aws/managed-by"
-	controllerName  = "sa-iamrole-controller"
 	stackTagKey     = "serviceaccount.k8s.aws/stack"
 )
 
 type Manager struct {
-	client       *iam.Client
-	rolePrefix   string
-	accountId    string
-	oidcProvider string
-	clusterName  string
+	client         *iam.Client
+	rolePrefix     string
+	accountId      string
+	oidcProvider   string
+	clusterName    string
+	controllerName string
 }
 
 func NewManagerWithDefaultConfig(
+	controllerName string,
 	rolePrefix string,
 	region string,
 	oidcProvider string,
@@ -56,15 +57,17 @@ func NewManagerWithDefaultConfig(
 	}
 
 	return &Manager{
-		client:       awsiam.NewFromConfig(cfg),
-		rolePrefix:   rolePrefix,
-		accountId:    *callerIdentity.Account,
-		oidcProvider: oidcProvider,
-		clusterName:  clusterName,
+		client:         awsiam.NewFromConfig(cfg),
+		rolePrefix:     rolePrefix,
+		accountId:      *callerIdentity.Account,
+		oidcProvider:   oidcProvider,
+		clusterName:    clusterName,
+		controllerName: controllerName,
 	}
 }
 
 func NewManagerWithWebIdToken(
+	controllerName string,
 	rolePrefix string,
 	region string,
 	oidcProvider string,
@@ -106,11 +109,12 @@ func NewManagerWithWebIdToken(
 	})
 
 	return &Manager{
-		client:       iamClient,
-		rolePrefix:   rolePrefix,
-		accountId:    accountId,
-		oidcProvider: oidcProvider,
-		clusterName:  clusterName,
+		client:         iamClient,
+		rolePrefix:     rolePrefix,
+		accountId:      accountId,
+		oidcProvider:   oidcProvider,
+		clusterName:    clusterName,
+		controllerName: controllerName,
 	}
 }
 
@@ -178,7 +182,7 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 	accessPolicy := m.makeAccessPolicy(name, namespace)
 	stackTagValue := fmt.Sprintf("%s/%s", namespace, name)
 	tags := []awstypes.Tag{
-		{Key: ref.String(managedByTagKey), Value: ref.String(controllerName)},
+		{Key: ref.String(managedByTagKey), Value: ref.String(m.controllerName)},
 		{Key: ref.String(stackTagKey), Value: &stackTagValue},
 		{Key: ref.String(clusterTagKey), Value: &m.clusterName},
 	}
@@ -227,7 +231,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 // controller. This check is based on AWS tags.
 func (m *Manager) IsManaged(role *awsiamtypes.Role) bool {
 	for _, tag := range role.Tags {
-		if *tag.Key == managedByTagKey && *tag.Value == controllerName {
+		if *tag.Key == managedByTagKey && *tag.Value == m.controllerName {
 			return true
 		}
 	}

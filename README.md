@@ -1,4 +1,4 @@
-# sa-iamrole-controller
+# iam-service-account-controller
 
 Kubernetes controller that automatically creates AWS IAM Roles for ServiceAccounts.
 
@@ -59,7 +59,7 @@ $ aws iam get-role --role-name k8s-sa_bar_foo
         "Tags": [
             {
                 "Key": "role.k8s.aws/managed-by",
-                "Value": "sa-iamrole-controller"
+                "Value": "iam-service-account-controller"
             },
             {
                 "Key": "serviceaccount.k8s.aws/stack",

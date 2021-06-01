@@ -1,4 +1,4 @@
-module github.com/ovotech/sa-iamrole-controller
+module github.com/ovotech/iam-service-account-controller
 
 go 1.16
 

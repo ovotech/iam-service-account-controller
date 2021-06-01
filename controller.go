@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ovotech/sa-iamrole-controller/pkg/iam"
-	iamerrors "github.com/ovotech/sa-iamrole-controller/pkg/iam/errors"
+	"github.com/ovotech/iam-service-account-controller/pkg/iam"
+	iamerrors "github.com/ovotech/iam-service-account-controller/pkg/iam/errors"
 
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +23,6 @@ import (
 )
 
 const (
-	controllerName            = "sa-iamrole-controller"
 	managedAnnotationKey      = "iamrole/managed"
 	roleAnnotationKey         = "eks.amazonaws.com/role-arn"
 	SyncSuccess               = "Synced"
@@ -47,7 +46,8 @@ type Controller struct {
 func NewController(
 	kubeclientset kubernetes.Interface,
 	serviceAccountInformer coreinformers.ServiceAccountInformer,
-	iamManager *iam.Manager) *Controller {
+	iamManager *iam.Manager,
+) *Controller {
 
 	klog.Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
