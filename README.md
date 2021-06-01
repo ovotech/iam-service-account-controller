@@ -6,13 +6,13 @@ This is for EKS clusters configured for [IAM Roles for service accounts](https:/
 
 ## Motivation
 
-We want to allow users with access to a namespace to create AWS IAM Roles that can be assumed by their ServiceAccounts. The controller handles this transparently when they create a ServiceAccount with an appropriate annotation.
+We want to allow users with access to a namespace to create AWS IAM Roles that can be assumed by their ServiceAccounts. The controller handles this transparently when they create a ServiceAccount with appropriate annotations.
 
 Note that we don't allow users to directly control their role's policies like this, for security reasons.
 
 We are using this as part of our secret management solution.
 
-## How does it work?
+## What does it do?
 
 If you create the following ServiceAccount (note the annotations):
 
@@ -27,7 +27,7 @@ metadata:
   namespace: bar
 ```
 
-the controller will automatically create an IAM Role with an AssumeRolePolicyDocument allowing that ServiceAccount to assume the role:
+the controller will automatically create an IAM role in the same account with an AssumeRolePolicyDocument that allows the ServiceAccount to assume the role:
 
 ```
 $ aws iam get-role --role-name k8s-sa_bar_foo
@@ -75,7 +75,7 @@ $ aws iam get-role --role-name k8s-sa_bar_foo
 }
 ```
 
-Note that the `role-arn` in the annotation must match:
+Note that the `eks.amazonaws.com/role-arn` annotation value must match:
 
 ```
 (optional-prefix_)service-account-namespace_service-account-name
