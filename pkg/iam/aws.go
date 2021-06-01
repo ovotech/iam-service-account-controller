@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	awsiamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go"
-	iamerrors "github.com/serain/k8s-aws-iam-controller/pkg/iam/errors"
-	"github.com/serain/k8s-aws-iam-controller/pkg/ref"
+	iamerrors "github.com/ovotech/sa-iamrole-controller/pkg/iam/errors"
+	"github.com/ovotech/sa-iamrole-controller/pkg/ref"
 )
 
 const (

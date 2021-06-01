@@ -7,21 +7,26 @@ import (
 	"github.com/ovotech/sa-iamrole-controller/pkg/iam"
 	iamerrors "github.com/ovotech/sa-iamrole-controller/pkg/iam/errors"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-
 	"k8s.io/klog"
 )
 
 const (
+	controllerAgentName         = "sa-iamrole-controller"
 	serviceAccountAnnotationKey = "eks.amazonaws.com/role-arn"
+	SuccessSynced               = "Synced"
+	MessageResourceSynced       = "Successfully synced with AWS IAM role"
 )
 
 type Controller struct {
@@ -29,15 +34,25 @@ type Controller struct {
 	serviceAccountsLister corelisters.ServiceAccountLister
 	serviceAccountsSynced cache.InformerSynced
 	workqueue             workqueue.RateLimitingInterface
-	// TODO add event records
-	// recorder              record.EventRecorder
-	iam *iam.Manager
+	recorder              record.EventRecorder
+	iam                   *iam.Manager
 }
 
 func NewController(
 	kubeclientset kubernetes.Interface,
 	serviceAccountInformer coreinformers.ServiceAccountInformer,
 	iamManager *iam.Manager) *Controller {
+
+	klog.Info("Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartStructuredLogging(0)
+	eventBroadcaster.StartRecordingToSink(
+		&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")},
+	)
+	recorder := eventBroadcaster.NewRecorder(
+		scheme.Scheme,
+		corev1.EventSource{Component: controllerAgentName},
+	)
 
 	controller := &Controller{
 		kubeclientset:         kubeclientset,
@@ -47,7 +62,8 @@ func NewController(
 			workqueue.DefaultControllerRateLimiter(),
 			"ServiceAccounts",
 		),
-		iam: iamManager,
+		recorder: recorder,
+		iam:      iamManager,
 	}
 
 	klog.Info("Setting up event handlers")
@@ -166,19 +182,21 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 	}
 
 	// Get the ServiceAccount resource with this namespace/name.
-	_, err = c.serviceAccountsLister.ServiceAccounts(namespace).Get(name)
+	sa, err := c.serviceAccountsLister.ServiceAccounts(namespace).Get(name)
 	if err != nil {
-		// The ServiceAccount no longer exists (i.e. it's been deleted from the k8s cluster).
+		// The ServiceAccount no longer exists (i.e. it's been deleted from the cluster).
 		// We ensure its IAM Role is removed from AWS.
 		if k8serrors.IsNotFound(err) {
 			klog.Infof(
-				"ServiceAccount %s no longer exists, will delete its IAM Role\n",
+				"ServiceAccount '%s' no longer exists, will delete its IAM Role\n",
 				serviceAccountKey,
 			)
-			c.iam.DeleteRole(name, namespace)
+			if err := c.iam.DeleteRole(name, namespace); err != nil {
+				return err
+			}
 			return nil
 		}
-
+		// Requeue to try again
 		return err
 	}
 
@@ -189,16 +207,16 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 			if err := c.iam.CreateRole(name, namespace); err != nil {
 				return err
 			}
-			return nil
+		} else {
+			// Some other error we can't handle now, requeue
+			return err
 		}
-		// Some other error we can't handle now
-		return err
 	}
 
-	klog.Infof("IAM Role for ServiceAccount '%s' exists; won't do anything", serviceAccountKey)
 	// TODO check that the role has the correct tags and access policy
 	// at the moment, if there's a rogue role with the correct name but a misconfigured access
 	// policy or missing tags, we wouldn't notice the problem.
+	c.recorder.Event(sa, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 
 	return nil
 }
@@ -207,7 +225,7 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 // string which is then put onto the work queue. It first checks the ServiceAccount's annotations to
 // see if this SA should be managed by this controller.
 func (c *Controller) enqueueServiceAccount(obj interface{}) {
-	var sa *v1.ServiceAccount = obj.(*v1.ServiceAccount)
+	var sa *corev1.ServiceAccount = obj.(*corev1.ServiceAccount)
 
 	// We only treat ServiceAccounts that have an annotation of the form:
 	//     eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE_NAME>
