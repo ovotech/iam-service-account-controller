@@ -4,6 +4,7 @@ import "fmt"
 
 const (
 	NotFoundErrorCode = "NotFound"
+	NotManaged        = "NotManaged"
 	OtherErrorCode    = "Other"
 )
 

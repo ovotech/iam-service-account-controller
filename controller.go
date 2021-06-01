@@ -25,8 +25,12 @@ import (
 const (
 	controllerAgentName         = "sa-iamrole-controller"
 	serviceAccountAnnotationKey = "eks.amazonaws.com/role-arn"
-	SuccessSynced               = "Synced"
+	SyncSuccess                 = "Synced"
 	MessageResourceSynced       = "Successfully synced with AWS IAM role"
+	SyncFailed                  = "SyncFailed"
+	MessageRoleCreationFailed   = "Failed to create AWS IAM role due to: %s"
+	SyncWarning                 = "SyncWarning"
+	MessageUnmanagedRole        = "AWS IAM role exists but is not managed by controller"
 )
 
 type Controller struct {
@@ -188,7 +192,7 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 		// We ensure its IAM Role is removed from AWS.
 		if k8serrors.IsNotFound(err) {
 			klog.Infof(
-				"ServiceAccount '%s' no longer exists, will delete its IAM Role\n",
+				"ServiceAccount '%s' no longer exists, will delete its IAM Role",
 				serviceAccountKey,
 			)
 			if err := c.iam.DeleteRole(name, namespace); err != nil {
@@ -201,22 +205,35 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 	}
 
 	// We try to fetch the role from AWS. If it doesn't exist we create it.
-	if _, err = c.iam.GetRole(name, namespace); err != nil {
+	role, err := c.iam.GetRole(name, namespace)
+	if err != nil {
 		if iamerrors.IsNotFound(err) {
-			klog.Infof("No IAM Role for '%s'; creating it\n", serviceAccountKey)
+			klog.Infof("No IAM Role for '%s'; creating it", serviceAccountKey)
 			if err := c.iam.CreateRole(name, namespace); err != nil {
+				// Failed to create the role for some reason
+				// We log an error event and requeue
+				c.recorder.Event(
+					sa,
+					corev1.EventTypeNormal,
+					SyncFailed,
+					fmt.Sprintf(MessageRoleCreationFailed, err.Error()),
+				)
 				return err
 			}
+			c.recorder.Event(sa, corev1.EventTypeWarning, SyncSuccess, MessageResourceSynced)
+			return nil
 		} else {
 			// Some other error we can't handle now, requeue
 			return err
 		}
 	}
 
-	// TODO check that the role has the correct tags and access policy
-	// at the moment, if there's a rogue role with the correct name but a misconfigured access
-	// policy or missing tags, we wouldn't notice the problem.
-	c.recorder.Event(sa, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
+	// The role already exists, check if it's managed by us
+	if c.iam.IsManaged(role) {
+		c.recorder.Event(sa, corev1.EventTypeNormal, SyncSuccess, MessageResourceSynced)
+	} else {
+		c.recorder.Event(sa, corev1.EventTypeWarning, SyncWarning, MessageUnmanagedRole)
+	}
 
 	return nil
 }

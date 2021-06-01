@@ -146,12 +146,16 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 // DeleteRole will delete an AWS IAM Role for the k8s ServiceAccount namespace/name if it the Role
 // exists and it's managed by this controller.
 func (m *Manager) DeleteRole(name string, namespace string) error {
-	managed, err := m.isManaged(name, namespace)
+	role, err := m.GetRole(name, namespace)
 	if err != nil {
 		return err
 	}
-	if !managed {
-		return nil
+
+	if !m.IsManaged(role) {
+		return &iamerrors.IAMError{
+			Code:    iamerrors.NotManaged,
+			Message: "Role not managed by controller",
+		}
 	}
 
 	fqn := m.makeRoleFQN(name, namespace)
@@ -166,22 +170,12 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 
 // isManaged checks if an AWS IAM Role for the ServiceAccount namespace/name is managed by this
 // controller. This check is based on AWS tags.
-func (m *Manager) isManaged(name string, namespace string) (bool, error) {
-	// TODO check tags
-	role, err := m.GetRole(name, namespace)
-	if err != nil {
-		if iamerrors.IsNotFound(err) {
-			return false, nil
-		} else {
-			return false, err
-		}
-	}
-
+func (m *Manager) IsManaged(role *awsiamtypes.Role) bool {
 	for _, tag := range role.Tags {
 		if *tag.Key == managedByTagKey && *tag.Value == managedByTagValue {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
