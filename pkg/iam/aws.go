@@ -199,6 +199,10 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 func (m *Manager) DeleteRole(name string, namespace string) error {
 	role, err := m.GetRole(name, namespace)
 	if err != nil {
+		// if there is no role, nothing to do and this is not an error
+		if iamerrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
