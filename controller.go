@@ -75,7 +75,10 @@ func NewController(
 	klog.Info("Setting up event handlers")
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    controller.enqueueServiceAccount,
+		AddFunc: controller.enqueueServiceAccount,
+		UpdateFunc: func(old, new interface{}) {
+			controller.enqueueServiceAccount(new)
+		},
 		DeleteFunc: controller.enqueueServiceAccount,
 	})
 
