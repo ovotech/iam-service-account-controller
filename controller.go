@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	managedAnnotationKey      = "iamrole/managed"
+	managedAnnotationKey      = "security.kaluza.com/iam-role-managed"
 	roleAnnotationKey         = "eks.amazonaws.com/role-arn"
 	SyncSuccess               = "Synced"
 	MessageResourceSynced     = "Successfully synced AWS IAM role"
@@ -246,7 +246,7 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	var sa *corev1.ServiceAccount = obj.(*corev1.ServiceAccount)
 
-	// Don't proceed if this doesn't have annotation "sa-iamrole/managed = true"
+	// Don't proceed if this doesn't have annotation indicating it's managed by this controller
 	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; !ok || val != "true" {
 		return
 	}

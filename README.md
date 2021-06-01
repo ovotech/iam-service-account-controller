@@ -21,7 +21,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    iamrole/managed: "true"
+    security.kaluza.com/iam-role-managed: "true"
     eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/k8s-sa_bar_foo
   name: foo
   namespace: bar
