@@ -246,7 +246,7 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	var sa *corev1.ServiceAccount = obj.(*corev1.ServiceAccount)
 
 	// Don't proceed if this doesn't have annotation "sa-iamrole/managed = true"
-	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; !ok || val != "true" {
+	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; ok && val == "true" {
 		return
 	}
 
