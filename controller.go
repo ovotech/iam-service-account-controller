@@ -209,35 +209,36 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 		return err
 	}
 
-	// We try to fetch the role from AWS. If it doesn't exist we create it.
 	role, err := c.iam.GetRole(name, namespace)
-	if err != nil {
-		if iamerrors.IsNotFound(err) {
-			klog.Infof("No IAM Role for '%s'; creating it", serviceAccountKey)
-			if err := c.iam.CreateRole(name, namespace); err != nil {
-				// Failed to create the role for some reason
-				// We log an error event and requeue
-				c.recorder.Event(
-					sa,
-					corev1.EventTypeWarning,
-					SyncFailed,
-					fmt.Sprintf(MessageRoleCreationFailed, err.Error()),
-				)
-				return err
-			}
+	switch {
+	case err == nil:
+		// The role already exists, check if it's managed by us
+		if c.iam.IsManaged(role) {
 			c.recorder.Event(sa, corev1.EventTypeNormal, SyncSuccess, MessageResourceSynced)
-			return nil
 		} else {
-			// Some other error we can't handle now, requeue
+			c.recorder.Event(sa, corev1.EventTypeWarning, SyncWarning, MessageUnmanagedRole)
+		}
+
+	case iamerrors.IsNotFound(err):
+		// The role doesn't exist yet, we need to create it
+		klog.Infof("No IAM Role for '%s'; creating it", serviceAccountKey)
+		if err := c.iam.CreateRole(name, namespace); err != nil {
+			// Failed to create the role for some reason
+			// We log an error event and requeue
+			c.recorder.Event(
+				sa,
+				corev1.EventTypeWarning,
+				SyncFailed,
+				fmt.Sprintf(MessageRoleCreationFailed, err.Error()),
+			)
 			return err
 		}
-	}
-
-	// The role already exists, check if it's managed by us
-	if c.iam.IsManaged(role) {
 		c.recorder.Event(sa, corev1.EventTypeNormal, SyncSuccess, MessageResourceSynced)
-	} else {
-		c.recorder.Event(sa, corev1.EventTypeWarning, SyncWarning, MessageUnmanagedRole)
+		return nil
+
+	default:
+		// Some other error we can't handle now, requeue
+		return err
 	}
 
 	return nil
