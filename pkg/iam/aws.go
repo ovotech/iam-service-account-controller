@@ -118,9 +118,9 @@ func NewManagerWithWebIdToken(
 	}
 }
 
-// makeRoleFQN returns the fully qualified name for the role. This is a string with the format:
+// makeIAMRoleName returns the fully qualified name for the role. This is a string with the format:
 // (prefix_)namespace_name
-func (m *Manager) makeRoleFQN(name string, namespace string) string {
+func (m *Manager) makeIAMRoleName(name string, namespace string) string {
 	if m.rolePrefix == "" {
 		return fmt.Sprintf("%s_%s", namespace, name)
 	}
@@ -153,15 +153,15 @@ func (m *Manager) makeAccessPolicy(name string, namespace string) string {
 // this is an ARN generated locally from the name and namespace strings and is not an ARN looked up
 // on AWS. As such this role may or may not exist in AWS.
 func (m *Manager) MakeRoleARN(name string, namespace string) string {
-	fqn := m.makeRoleFQN(name, namespace)
-	return fmt.Sprintf("arn:aws:iam::%s:role/%s", m.accountId, fqn)
+	roleName := m.makeIAMRoleName(name, namespace)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", m.accountId, roleName)
 }
 
 // GetRole will fetch the AWS IAM Role for the k8s ServiceAccount namespace/name.
 func (m *Manager) GetRole(name string, namespace string) (*awsiamtypes.Role, error) {
-	fqn := m.makeRoleFQN(name, namespace)
+	roleName := m.makeIAMRoleName(name, namespace)
 
-	roleOutput, err := m.client.GetRole(context.TODO(), &iam.GetRoleInput{RoleName: &fqn})
+	roleOutput, err := m.client.GetRole(context.TODO(), &iam.GetRoleInput{RoleName: &roleName})
 	if err != nil {
 		var ae smithy.APIError
 		if errors.As(err, &ae) && ae.ErrorCode() == "NoSuchEntity" {
@@ -178,7 +178,7 @@ func (m *Manager) GetRole(name string, namespace string) (*awsiamtypes.Role, err
 
 // CreateRole will create an AWS IAM Role for the k8s ServiceAccount namespace/name.
 func (m *Manager) CreateRole(name string, namespace string) error {
-	fqn := m.makeRoleFQN(name, namespace)
+	roleName := m.makeIAMRoleName(name, namespace)
 	accessPolicy := m.makeAccessPolicy(name, namespace)
 	stackTagValue := fmt.Sprintf("%s/%s", namespace, name)
 	tags := []awstypes.Tag{
@@ -189,7 +189,11 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 
 	_, err := m.client.CreateRole(
 		context.TODO(),
-		&iam.CreateRoleInput{AssumeRolePolicyDocument: &accessPolicy, RoleName: &fqn, Tags: tags},
+		&iam.CreateRoleInput{
+			AssumeRolePolicyDocument: &accessPolicy,
+			RoleName:                 &roleName,
+			Tags:                     tags,
+		},
 	)
 	if err != nil {
 		return &iamerrors.IAMError{Code: iamerrors.OtherErrorCode, Message: err.Error()}
@@ -217,9 +221,9 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 		}
 	}
 
-	fqn := m.makeRoleFQN(name, namespace)
+	roleName := m.makeIAMRoleName(name, namespace)
 
-	_, err = m.client.DeleteRole(context.TODO(), &iam.DeleteRoleInput{RoleName: &fqn})
+	_, err = m.client.DeleteRole(context.TODO(), &iam.DeleteRoleInput{RoleName: &roleName})
 	if err != nil {
 		return &iamerrors.IAMError{Code: iamerrors.OtherErrorCode, Message: err.Error()}
 	}
