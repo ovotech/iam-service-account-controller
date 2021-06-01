@@ -1,6 +1,2 @@
 [ ] assume a role with sts for the iam client
 [ ] use a flag to control whether it will delete roles when SA is deleted
-
-questions:
-1) Should we add a labels or annotations to track if this should be managed by the controller?
-currently this is done just by checking it has the right eks.amazonaws.com/role-arn annotation

@@ -14,13 +14,14 @@ We are using this as part of our secret management solution.
 
 ## How does it work?
 
-If you create the following ServiceAccount (note the annotation):
+If you create the following ServiceAccount (note the annotations):
 
 ```
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
+    iamrole/managed: "true"
     eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/k8s-sa_bar_foo
   name: foo
   namespace: bar
@@ -72,6 +73,12 @@ $ aws iam get-role --role-name k8s-sa_bar_foo
         "RoleLastUsed": {}
     }
 }
+```
+
+Note that the `role-arn` in the annotation must match:
+
+```
+(optional-prefix_)service-account-namespace_service-account-name
 ```
 
 ## Running it

@@ -23,14 +23,15 @@ import (
 )
 
 const (
-	controllerAgentName         = "sa-iamrole-controller"
-	serviceAccountAnnotationKey = "eks.amazonaws.com/role-arn"
-	SyncSuccess                 = "Synced"
-	MessageResourceSynced       = "Successfully synced with AWS IAM role"
-	SyncFailed                  = "SyncFailed"
-	MessageRoleCreationFailed   = "Failed to create AWS IAM role due to: %s"
-	SyncWarning                 = "SyncWarning"
-	MessageUnmanagedRole        = "AWS IAM role exists but is not managed by controller"
+	controllerAgentName       = "sa-iamrole-controller"
+	managedAnnotationKey      = "iamrole/managed"
+	roleAnnotationKey         = "eks.amazonaws.com/role-arn"
+	SyncSuccess               = "Synced"
+	MessageResourceSynced     = "Successfully synced with AWS IAM role"
+	SyncFailed                = "SyncFailed"
+	MessageRoleCreationFailed = "Failed to create AWS IAM role due to: %s"
+	SyncWarning               = "SyncWarning"
+	MessageUnmanagedRole      = "AWS IAM role exists but is not managed by controller"
 )
 
 type Controller struct {
@@ -244,6 +245,11 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	var sa *corev1.ServiceAccount = obj.(*corev1.ServiceAccount)
 
+	// Don't proceed if this doesn't have annotation "sa-iamrole/managed = true"
+	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; !ok || val != "true" {
+		return
+	}
+
 	// We only treat ServiceAccounts that have an annotation of the form:
 	//     eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE_NAME>
 	//
@@ -251,8 +257,8 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	// ServiceAccount's annotation doesn't match
 	//     (prefix_)namespace_name
 	// then we ignore the event.
-	if annotationValue, ok := sa.ObjectMeta.Annotations[serviceAccountAnnotationKey]; ok {
-		if annotationValue == c.iam.MakeRoleARN(
+	if val, ok := sa.ObjectMeta.Annotations[roleAnnotationKey]; ok {
+		if val == c.iam.MakeRoleARN(
 			sa.ObjectMeta.Name,
 			sa.ObjectMeta.Namespace,
 		) {
