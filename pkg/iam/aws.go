@@ -34,7 +34,8 @@ type Manager struct {
 	clusterName  string
 }
 
-func NewManager(
+func NewManagerWithDefaultConfig(
+	controllerRole string,
 	rolePrefix string,
 	region string,
 	oidcProvider string,
@@ -61,6 +62,18 @@ func NewManager(
 		oidcProvider: oidcProvider,
 		clusterName:  clusterName,
 	}
+}
+
+func NewManagerWithWebIdToken(
+	controllerRole string,
+	rolePrefix string,
+	region string,
+	oidcProvider string,
+	clusterName string,
+	controllerTokenPath string,
+) *Manager {
+	log.Fatal("Not implemented")
+	return nil
 }
 
 // makeRoleFQN returns the fully qualified name for the role. This is a string with the format:

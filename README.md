@@ -85,5 +85,7 @@ $ aws eks update-kubeconfig --name non-production-kmi-alpha
 
 $ OIDC_PROVIDER=$(aws eks describe-cluster --name non-production-kmi-alpha --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
 
-$ go run . -kubeconfig=$HOME/.kube/config -oidc-provider $OIDC_PROVIDER
+$ go run . -kubeconfig=$HOME/.kube/config -oidc-provider=$OIDC_PROVIDER -token-path=""
 ```
+
+Note that when `-token-path` is empty the controller will use default AWS authentication, which is what we want when we run locally.

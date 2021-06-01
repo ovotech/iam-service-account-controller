@@ -14,14 +14,16 @@ import (
 )
 
 var (
-	masterURL     string
-	kubeconfig    string
-	syncInterval  time.Duration
-	workerThreads int
-	awsRegion     string
-	iamRolePrefix string
-	oidcProvider  string
-	clusterName   string
+	masterURL                string
+	kubeconfig               string
+	syncInterval             time.Duration
+	workerThreads            int
+	awsRegion                string
+	iamRolePrefix            string
+	oidcProvider             string
+	clusterName              string
+	controllerIAMRole        string
+	controllerWebIdTokenPath string
 )
 
 func main() {
@@ -32,6 +34,26 @@ func main() {
 		klog.Fatalf(
 			"Invalid OIDC issuer URL: '%s'. See help for more information.",
 			oidcProvider,
+		)
+	}
+
+	var iamManager *iam.Manager
+	if controllerWebIdTokenPath == "" {
+		iamManager = iam.NewManagerWithDefaultConfig(
+			controllerIAMRole,
+			iamRolePrefix,
+			awsRegion,
+			oidcProvider,
+			clusterName,
+		)
+	} else {
+		iamManager = iam.NewManagerWithWebIdToken(
+			controllerIAMRole,
+			iamRolePrefix,
+			awsRegion,
+			oidcProvider,
+			clusterName,
+			controllerWebIdTokenPath,
 		)
 	}
 
@@ -49,7 +71,7 @@ func main() {
 	controller := NewController(
 		kubeClient,
 		kubeInformerFactory.Core().V1().ServiceAccounts(),
-		iam.NewManager(iamRolePrefix, awsRegion, oidcProvider, clusterName),
+		iamManager,
 	)
 	kubeInformerFactory.Start(stopCh)
 
@@ -85,15 +107,27 @@ func init() {
 	)
 	flag.StringVar(
 		&awsRegion,
-		"aws-region",
+		"region",
 		"eu-west-1",
 		"The AWS region for AWS IAM Role management.",
 	)
 	flag.StringVar(
 		&iamRolePrefix,
-		"iam-role-prefix",
+		"role-prefix",
 		"k8s-sa",
-		"Prefix for the IAM Role name.",
+		"The AWS IAM roles managed by the controller have this string prefixed to their names.",
+	)
+	flag.StringVar(
+		&controllerIAMRole,
+		"role-arn",
+		"sa-iamrole-controller-role",
+		"The AWS IAM role used by the controller.",
+	)
+	flag.StringVar(
+		&controllerWebIdTokenPath,
+		"token-path",
+		"/var/run/secrets/eks.amazonaws.com/serviceaccount/token",
+		"Path to the AWS Web Identity Token in the pod. If empty will use default authentication instead (i.e. useful if running locally).",
 	)
 	flag.StringVar(
 		&oidcProvider,
