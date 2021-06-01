@@ -168,7 +168,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 // controller. This check is based on AWS tags.
 func (m *Manager) isManaged(name string, namespace string) (bool, error) {
 	// TODO check tags
-	_, err := m.GetRole(name, namespace)
+	role, err := m.GetRole(name, namespace)
 	if err != nil {
 		if iamerrors.IsNotFound(err) {
 			return false, nil
@@ -176,5 +176,12 @@ func (m *Manager) isManaged(name string, namespace string) (bool, error) {
 			return false, err
 		}
 	}
-	return true, err
+
+	for _, tag := range role.Tags {
+		if *tag.Key == managedByTagKey && *tag.Value == managedByTagValue {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
