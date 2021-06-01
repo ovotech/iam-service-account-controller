@@ -47,11 +47,11 @@ func main() {
 		)
 	} else {
 		iamManager = iam.NewManagerWithWebIdToken(
-			controllerIAMRole,
 			iamRolePrefix,
 			awsRegion,
 			oidcProvider,
 			clusterName,
+			controllerIAMRole,
 			controllerWebIdTokenPath,
 		)
 	}
@@ -119,8 +119,8 @@ func init() {
 	flag.StringVar(
 		&controllerIAMRole,
 		"role-arn",
-		"sa-iamrole-controller-role",
-		"The AWS IAM role used by the controller.",
+		"iam-service-account-controller",
+		"The name of the AWS IAM role used by the controller.",
 	)
 	flag.StringVar(
 		&controllerWebIdTokenPath,

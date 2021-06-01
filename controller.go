@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	controllerAgentName       = "sa-iamrole-controller"
+	controllerName            = "sa-iamrole-controller"
 	managedAnnotationKey      = "iamrole/managed"
 	roleAnnotationKey         = "eks.amazonaws.com/role-arn"
 	SyncSuccess               = "Synced"
@@ -57,7 +57,7 @@ func NewController(
 	)
 	recorder := eventBroadcaster.NewRecorder(
 		scheme.Scheme,
-		corev1.EventSource{Component: controllerAgentName},
+		corev1.EventSource{Component: controllerName},
 	)
 
 	controller := &Controller{

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	awsiam "github.com/aws/aws-sdk-go-v2/service/iam"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	awssts "github.com/aws/aws-sdk-go-v2/service/sts"
-	"k8s.io/klog"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -20,10 +21,10 @@ import (
 )
 
 const (
-	clusterTagKey     = "role.k8s.aws/cluster"
-	managedByTagKey   = "role.k8s.aws/managed-by"
-	managedByTagValue = "sa-iamrole-controller"
-	stackTagKey       = "serviceaccount.k8s.aws/stack"
+	clusterTagKey   = "role.k8s.aws/cluster"
+	managedByTagKey = "role.k8s.aws/managed-by"
+	controllerName  = "sa-iamrole-controller"
+	stackTagKey     = "serviceaccount.k8s.aws/stack"
 )
 
 type Manager struct {
@@ -51,7 +52,7 @@ func NewManagerWithDefaultConfig(
 		&awssts.GetCallerIdentityInput{},
 	)
 	if err != nil {
-		klog.Fatalf("Unable to get account identifer from AWS STS: %v", err)
+		log.Fatalf("Unable to get account identifer from AWS STS: %v", err)
 	}
 
 	return &Manager{
@@ -64,15 +65,53 @@ func NewManagerWithDefaultConfig(
 }
 
 func NewManagerWithWebIdToken(
-	controllerRole string,
 	rolePrefix string,
 	region string,
 	oidcProvider string,
 	clusterName string,
-	controllerTokenPath string,
+	controllerRole string,
+	tokenPath string,
 ) *Manager {
-	log.Fatal("Not implemented")
-	return nil
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(region),
+	)
+	if err != nil {
+		log.Fatalf("Unable to load AWS SDK config: %v", err)
+	}
+
+	stsClient := awssts.NewFromConfig(cfg)
+	callerIdentity, err := stsClient.GetCallerIdentity(
+		context.TODO(),
+		&awssts.GetCallerIdentityInput{},
+	)
+	if err != nil {
+		log.Fatalf("Unable to get account identifer from AWS STS: %v", err)
+	}
+	accountId := *callerIdentity.Account
+
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountId, controllerRole)
+	appCreds := aws.NewCredentialsCache(
+		stscreds.NewWebIdentityRoleProvider(
+			stsClient,
+			roleARN,
+			stscreds.IdentityTokenFile(tokenPath),
+			func(o *stscreds.WebIdentityRoleOptions) {
+				o.RoleSessionName = controllerName
+			},
+		),
+	)
+
+	iamClient := awsiam.NewFromConfig(cfg, func(o *awsiam.Options) {
+		o.Credentials = appCreds
+	})
+
+	return &Manager{
+		client:       iamClient,
+		rolePrefix:   rolePrefix,
+		accountId:    accountId,
+		oidcProvider: oidcProvider,
+		clusterName:  clusterName,
+	}
 }
 
 // makeRoleFQN returns the fully qualified name for the role. This is a string with the format:
@@ -139,7 +178,7 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 	accessPolicy := m.makeAccessPolicy(name, namespace)
 	stackTagValue := fmt.Sprintf("%s/%s", namespace, name)
 	tags := []awstypes.Tag{
-		{Key: ref.String(managedByTagKey), Value: ref.String(managedByTagValue)},
+		{Key: ref.String(managedByTagKey), Value: ref.String(controllerName)},
 		{Key: ref.String(stackTagKey), Value: &stackTagValue},
 		{Key: ref.String(clusterTagKey), Value: &m.clusterName},
 	}
@@ -184,7 +223,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 // controller. This check is based on AWS tags.
 func (m *Manager) IsManaged(role *awsiamtypes.Role) bool {
 	for _, tag := range role.Tags {
-		if *tag.Key == managedByTagKey && *tag.Value == managedByTagValue {
+		if *tag.Key == managedByTagKey && *tag.Value == controllerName {
 			return true
 		}
 	}
