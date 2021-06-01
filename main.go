@@ -40,7 +40,6 @@ func main() {
 	var iamManager *iam.Manager
 	if controllerWebIdTokenPath == "" {
 		iamManager = iam.NewManagerWithDefaultConfig(
-			controllerIAMRole,
 			iamRolePrefix,
 			awsRegion,
 			oidcProvider,

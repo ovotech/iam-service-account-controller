@@ -35,7 +35,6 @@ type Manager struct {
 }
 
 func NewManagerWithDefaultConfig(
-	controllerRole string,
 	rolePrefix string,
 	region string,
 	oidcProvider string,

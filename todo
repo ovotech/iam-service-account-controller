@@ -1,9 +1,6 @@
 [ ] assume a role with sts for the iam client
-[ ] check tags before deleting
 [ ] use a flag to control whether it will delete roles when SA is deleted
-
 
 questions:
 1) Should we add a labels or annotations to track if this should be managed by the controller?
 currently this is done just by checking it has the right eks.amazonaws.com/role-arn annotation
-2) Should events be added to the ServiceAccount resource to say it was synced?
