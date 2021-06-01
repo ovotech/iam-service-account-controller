@@ -33,6 +33,7 @@ type Manager struct {
 	oidcProvider   string
 	clusterName    string
 	controllerName string
+	ctx            context.Context
 }
 
 func NewManagerWithDefaultConfig(
@@ -42,14 +43,16 @@ func NewManagerWithDefaultConfig(
 	oidcProvider string,
 	clusterName string,
 ) *Manager {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		log.Fatalf("Unable to load AWS SDK config: %v", err)
 	}
 
 	stsClient := awssts.NewFromConfig(cfg)
 	callerIdentity, err := stsClient.GetCallerIdentity(
-		context.TODO(),
+		ctx,
 		&awssts.GetCallerIdentityInput{},
 	)
 	if err != nil {
@@ -63,6 +66,7 @@ func NewManagerWithDefaultConfig(
 		oidcProvider:   oidcProvider,
 		clusterName:    clusterName,
 		controllerName: controllerName,
+		ctx:            ctx,
 	}
 }
 
@@ -75,16 +79,16 @@ func NewManagerWithWebIdToken(
 	controllerRole string,
 	tokenPath string,
 ) *Manager {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(region),
-	)
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		log.Fatalf("Unable to load AWS SDK config: %v", err)
 	}
 
 	stsClient := awssts.NewFromConfig(cfg)
 	callerIdentity, err := stsClient.GetCallerIdentity(
-		context.TODO(),
+		ctx,
 		&awssts.GetCallerIdentityInput{},
 	)
 	if err != nil {
@@ -115,6 +119,7 @@ func NewManagerWithWebIdToken(
 		oidcProvider:   oidcProvider,
 		clusterName:    clusterName,
 		controllerName: controllerName,
+		ctx:            ctx,
 	}
 }
 
@@ -161,7 +166,7 @@ func (m *Manager) MakeRoleARN(name string, namespace string) string {
 func (m *Manager) GetRole(name string, namespace string) (*awsiamtypes.Role, error) {
 	roleName := m.makeIAMRoleName(name, namespace)
 
-	roleOutput, err := m.client.GetRole(context.TODO(), &iam.GetRoleInput{RoleName: &roleName})
+	roleOutput, err := m.client.GetRole(m.ctx, &iam.GetRoleInput{RoleName: &roleName})
 	if err != nil {
 		var ae smithy.APIError
 		if errors.As(err, &ae) && ae.ErrorCode() == "NoSuchEntity" {
@@ -188,7 +193,7 @@ func (m *Manager) CreateRole(name string, namespace string) error {
 	}
 
 	_, err := m.client.CreateRole(
-		context.TODO(),
+		m.ctx,
 		&iam.CreateRoleInput{
 			AssumeRolePolicyDocument: &accessPolicy,
 			RoleName:                 &roleName,
@@ -223,7 +228,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 
 	roleName := m.makeIAMRoleName(name, namespace)
 
-	_, err = m.client.DeleteRole(context.TODO(), &iam.DeleteRoleInput{RoleName: &roleName})
+	_, err = m.client.DeleteRole(m.ctx, &iam.DeleteRoleInput{RoleName: &roleName})
 	if err != nil {
 		return &iamerrors.IAMError{Code: iamerrors.OtherErrorCode, Message: err.Error()}
 	}
