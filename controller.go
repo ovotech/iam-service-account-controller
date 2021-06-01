@@ -214,13 +214,13 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 				// We log an error event and requeue
 				c.recorder.Event(
 					sa,
-					corev1.EventTypeNormal,
+					corev1.EventTypeWarning,
 					SyncFailed,
 					fmt.Sprintf(MessageRoleCreationFailed, err.Error()),
 				)
 				return err
 			}
-			c.recorder.Event(sa, corev1.EventTypeWarning, SyncSuccess, MessageResourceSynced)
+			c.recorder.Event(sa, corev1.EventTypeNormal, SyncSuccess, MessageResourceSynced)
 			return nil
 		} else {
 			// Some other error we can't handle now, requeue
