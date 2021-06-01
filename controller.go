@@ -27,11 +27,12 @@ const (
 	managedAnnotationKey      = "iamrole/managed"
 	roleAnnotationKey         = "eks.amazonaws.com/role-arn"
 	SyncSuccess               = "Synced"
-	MessageResourceSynced     = "Successfully synced with AWS IAM role"
+	MessageResourceSynced     = "Successfully synced AWS IAM role"
 	SyncFailed                = "SyncFailed"
 	MessageRoleCreationFailed = "Failed to create AWS IAM role due to: %s"
 	SyncWarning               = "SyncWarning"
 	MessageUnmanagedRole      = "AWS IAM role exists but is not managed by controller"
+	MessageMisconfiguredARN   = "ServiceAccount is managed but ARN doesn't match spec"
 )
 
 type Controller struct {
@@ -246,7 +247,7 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	var sa *corev1.ServiceAccount = obj.(*corev1.ServiceAccount)
 
 	// Don't proceed if this doesn't have annotation "sa-iamrole/managed = true"
-	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; ok && val == "true" {
+	if val, ok := sa.ObjectMeta.Annotations[managedAnnotationKey]; !ok || val != "true" {
 		return
 	}
 
@@ -256,20 +257,25 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 	// We also have a strict naming convention for the IAM_ROLE_NAME. If the IAM_ROLE_NAME in this
 	// ServiceAccount's annotation doesn't match
 	//     (prefix_)namespace_name
-	// then we ignore the event.
+	// then we ignore log an warning and ignore the event.
 	if val, ok := sa.ObjectMeta.Annotations[roleAnnotationKey]; ok {
-		if val == c.iam.MakeRoleARN(
+		if val != c.iam.MakeRoleARN(
 			sa.ObjectMeta.Name,
 			sa.ObjectMeta.Namespace,
 		) {
-			var key string
-			var err error
-
-			if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-				utilruntime.HandleError(err)
-				return
-			}
-			c.workqueue.Add(key)
+			klog.Infof(
+				"ServiceAccount '%s' wants to be managed by controller but ARN doesn't match spec",
+			)
+			c.recorder.Event(sa, corev1.EventTypeWarning, SyncWarning, MessageMisconfiguredARN)
+			return
 		}
+
+		var key string
+		var err error
+		if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+			utilruntime.HandleError(err)
+			return
+		}
+		c.workqueue.Add(key)
 	}
 }
