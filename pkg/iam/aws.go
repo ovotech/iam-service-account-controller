@@ -87,8 +87,8 @@ func NewManagerWithWebIdToken(
 	if err != nil {
 		log.Fatalf("Unable to get account identifer from AWS STS: %v", err)
 	}
-	accountId := *callerIdentity.Account
 
+	accountId := *callerIdentity.Account
 	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountId, controllerRole)
 	appCreds := aws.NewCredentialsCache(
 		stscreds.NewWebIdentityRoleProvider(

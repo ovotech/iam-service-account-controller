@@ -1,2 +1,0 @@
-[ ] assume a role with sts for the iam client
-[ ] use a flag to control whether it will delete roles when SA is deleted
