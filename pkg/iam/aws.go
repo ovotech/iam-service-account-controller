@@ -212,7 +212,7 @@ func (m *Manager) DeleteRole(name string, namespace string) error {
 
 	if !m.IsManaged(role) {
 		return &iamerrors.IAMError{
-			Code:    iamerrors.NotManaged,
+			Code:    iamerrors.NotManagedErrorCode,
 			Message: "Role not managed by controller",
 		}
 	}

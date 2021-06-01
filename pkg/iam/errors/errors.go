@@ -3,9 +3,9 @@ package errors
 import "fmt"
 
 const (
-	NotFoundErrorCode = "NotFound"
-	NotManaged        = "NotManaged"
-	OtherErrorCode    = "Other"
+	NotFoundErrorCode   = "NotFound"
+	NotManagedErrorCode = "NotManaged"
+	OtherErrorCode      = "Other"
 )
 
 type IAMError struct {
