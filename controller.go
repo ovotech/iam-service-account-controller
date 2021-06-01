@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/ovotech/iam-service-account-controller/pkg/iam"
@@ -190,6 +191,18 @@ func (c *Controller) syncHandler(serviceAccountKey string) error {
 		return nil
 	}
 
+	// name and namespace are input from outside our trust boundary and we use them in a few
+	// sensitive places including when constructing access policies.
+	// We make sure they don't contain any sneaky characters here.
+	// Note that if they're not valid we return a nil error because we don't want to requeue them.
+	if !isValidUserInput(namespace) || !isValidUserInput(name) {
+		klog.Infof(
+			"ServiceAccount key '%s' contains unexpected user input",
+			serviceAccountKey,
+		)
+		return nil
+	}
+
 	// Get the ServiceAccount resource with this namespace/name.
 	sa, err := c.serviceAccountsLister.ServiceAccounts(namespace).Get(name)
 	if err != nil {
@@ -282,4 +295,15 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 		}
 		c.workqueue.Add(key)
 	}
+}
+
+// validateUserInput takes a user input string and returns true if the input is acceptable from a
+// security point of view.
+func isValidUserInput(input string) bool {
+	var isValidString = regexp.MustCompile(`^[1-9a-z-]+$`).MatchString
+
+	if isValidString(input) {
+		return true
+	}
+	return false
 }
