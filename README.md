@@ -1,6 +1,6 @@
 # iam-service-account-controller
 
-Kubernetes controller that automatically creates AWS IAM Roles for ServiceAccounts, giving ServiceAccounts an IAM identity.
+Kubernetes controller that automatically manages AWS IAM roles for ServiceAccounts.
 
 This is for EKS clusters configured for [IAM Roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
 
