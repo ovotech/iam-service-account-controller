@@ -36,7 +36,7 @@ func main() {
 
 	if oidcProvider == "" {
 		klog.Fatalf(
-			"Invalid OIDC issuer URL: '%s'. See help for more information.",
+			"Invalid OIDC provider: '%s'. See help for more information.",
 			oidcProvider,
 		)
 	}
