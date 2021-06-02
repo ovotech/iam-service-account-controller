@@ -81,13 +81,8 @@ func NewManagerWithWebIdToken(
 ) *Manager {
 	ctx := context.Background()
 
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-	if err != nil {
-		log.Fatalf("Unable to load AWS SDK config: %v", err)
-	}
-
 	// get creds
-	stsClient := awssts.NewFromConfig(cfg)
+	stsClient := awssts.New(awssts.Options{Region: region})
 	appCreds := aws.NewCredentialsCache(
 		stscreds.NewWebIdentityRoleProvider(
 			stsClient,
@@ -100,7 +95,8 @@ func NewManagerWithWebIdToken(
 	)
 
 	// get account id for manager
-	callerIdentity, err := stsClient.GetCallerIdentity(
+	acctSTSClient := awssts.New(awssts.Options{Region: region, Credentials: appCreds})
+	callerIdentity, err := acctSTSClient.GetCallerIdentity(
 		ctx,
 		&awssts.GetCallerIdentityInput{},
 	)
@@ -110,9 +106,7 @@ func NewManagerWithWebIdToken(
 	accountId := *callerIdentity.Account
 
 	// get iam client for manager
-	iamClient := awsiam.NewFromConfig(cfg, func(o *awsiam.Options) {
-		o.Credentials = appCreds
-	})
+	iamClient := awsiam.New(awsiam.Options{Region: region, Credentials: appCreds})
 
 	return &Manager{
 		client:         iamClient,
