@@ -76,7 +76,7 @@ func NewManagerWithWebIdToken(
 	region string,
 	oidcProvider string,
 	clusterName string,
-	controllerRole string,
+	controllerRoleARN string,
 	tokenPath string,
 ) *Manager {
 	ctx := context.Background()
@@ -86,21 +86,12 @@ func NewManagerWithWebIdToken(
 		log.Fatalf("Unable to load AWS SDK config: %v", err)
 	}
 
+	// get creds
 	stsClient := awssts.NewFromConfig(cfg)
-	callerIdentity, err := stsClient.GetCallerIdentity(
-		ctx,
-		&awssts.GetCallerIdentityInput{},
-	)
-	if err != nil {
-		log.Fatalf("Unable to get account identifer from AWS STS: %v", err)
-	}
-
-	accountId := *callerIdentity.Account
-	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountId, controllerRole)
 	appCreds := aws.NewCredentialsCache(
 		stscreds.NewWebIdentityRoleProvider(
 			stsClient,
-			roleARN,
+			controllerRoleARN,
 			stscreds.IdentityTokenFile(tokenPath),
 			func(o *stscreds.WebIdentityRoleOptions) {
 				o.RoleSessionName = controllerName
@@ -108,6 +99,17 @@ func NewManagerWithWebIdToken(
 		),
 	)
 
+	// get account id for manager
+	callerIdentity, err := stsClient.GetCallerIdentity(
+		ctx,
+		&awssts.GetCallerIdentityInput{},
+	)
+	if err != nil {
+		log.Fatalf("Unable to get account identifer from AWS STS: %v", err)
+	}
+	accountId := *callerIdentity.Account
+
+	// get iam client for manager
 	iamClient := awsiam.NewFromConfig(cfg, func(o *awsiam.Options) {
 		o.Credentials = appCreds
 	})

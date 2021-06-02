@@ -26,7 +26,7 @@ var (
 	iamRolePrefix            string
 	oidcProvider             string
 	clusterName              string
-	controllerIAMRole        string
+	controllerIAMRoleARN     string
 	controllerWebIdTokenPath string
 )
 
@@ -51,13 +51,20 @@ func main() {
 			clusterName,
 		)
 	} else {
+		// ARN is required for web id token auth
+		if controllerIAMRoleARN == "" {
+			klog.Fatalf(
+				"Invalid role ARN for controller when using web ID token auth: '%s'. See help for more information.",
+				controllerIAMRoleARN,
+			)
+		}
 		iamManager = iam.NewManagerWithWebIdToken(
 			controllerName,
 			iamRolePrefix,
 			awsRegion,
 			oidcProvider,
 			clusterName,
-			controllerIAMRole,
+			controllerIAMRoleARN,
 			controllerWebIdTokenPath,
 		)
 	}
@@ -123,10 +130,10 @@ func init() {
 		"The AWS IAM roles managed by the controller have this string prefixed to their names.",
 	)
 	flag.StringVar(
-		&controllerIAMRole,
+		&controllerIAMRoleARN,
 		"role-arn",
-		"iam-service-account-controller",
-		"The name of the AWS IAM role used by the controller.",
+		"",
+		"The full ARN of the AWS IAM role used by the controller.",
 	)
 	flag.StringVar(
 		&controllerWebIdTokenPath,
