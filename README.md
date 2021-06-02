@@ -18,7 +18,7 @@ We are using this as part of our secret management solution.
 
 If you create the following ServiceAccount (note the annotations):
 
-```
+```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -31,7 +31,7 @@ metadata:
 
 the controller will automatically create an IAM role in the same account with an AssumeRolePolicyDocument that allows the ServiceAccount to assume the role:
 
-```
+```json
 $ aws iam get-role --role-name k8s-sa_bar_foo
 {
     "Role": {
@@ -101,7 +101,7 @@ We assume your EKS cluster is set up for [IAM Roles for service accounts](https:
 
 We first need to create any IAM role for our controller to assume from the cluster:
 
-```
+```json
 $ NAMESPACE=iam-service-account-controller
 
 $ EKS_CLUSTER_NAME=cluster_name
@@ -127,6 +127,7 @@ $ cat <<EOF > /tmp/trust.json
       }
     }
   ]
+}
 EOF
 
 $ cat <<EOF > /tmp/policy.json
@@ -285,7 +286,7 @@ metadata:
 
 you should see:
 
-```
+```log
 $ kubectl -n iam-service-account-controller logs -f iam-service-account-controller-8595966fb5-12345
 W0602 15:40:33.396159       1 client_config.go:615] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
 I0602 15:40:33.422062       1 controller.go:53] Creating event broadcaster
