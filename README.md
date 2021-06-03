@@ -210,7 +210,7 @@ spec:
           imagePullPolicy: Always
           args:
             # roles managed by this controller are prefixed with this string
-            - -role-prefix=kmi-sa
+            - -role-prefix=k8s-sa
             # cluster OIDC provider URL without the "https://"
             - -oidc-provider=oidc.eks.eu-west-1.amazonaws.com/id/14758F1AFD44C09B7992073CCF00B43D
             # path to the IAM web ID token for pod authentication to AWS
