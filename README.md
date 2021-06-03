@@ -2,13 +2,15 @@
 
 Kubernetes controller that automatically manages AWS IAM roles for ServiceAccounts.
 
-This is for EKS clusters configured for [IAM Roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+This is for EKS clusters configured for [IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+
+Based on the Kubernetes [sample-controller](https://github.com/kubernetes/sample-controller).
 
 ## Motivation
 
-We want to allow users with access to a namespace to manage AWS IAM roles that can be assumed by ServiceAccounts in that namespace.
+We want to allow users with access to a k8s namespace to manage AWS IAM roles that can be assumed by ServiceAccounts in that namespace.
 
-This controller creates those IAM roles transparently when they create a ServiceAccount with appropriate annotations. This way our users can manage IAM roles for ServiceAccounts in their namespace without directly accessing the AWS API.
+This controller transparently synchronises IAM roles with ServiceAccounts with appropriate annotations. This way our users can manage IAM roles for their ServiceAccounts without requiring direct access to AWS.
 
 Note that we do not allow users to directly control their role's policies like this, for security reasons.
 
