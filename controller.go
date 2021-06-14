@@ -281,7 +281,9 @@ func (c *Controller) enqueueServiceAccount(obj interface{}) {
 			sa.ObjectMeta.Namespace,
 		) {
 			klog.Infof(
-				"ServiceAccount '%s' wants to be managed by controller but ARN doesn't match spec",
+				"ServiceAccount '%s/%s' wants to be managed by controller but ARN doesn't match spec",
+				sa.ObjectMeta.Namespace,
+				sa.ObjectMeta.Name,
 			)
 			c.recorder.Event(sa, corev1.EventTypeWarning, SyncWarning, MessageMisconfiguredARN)
 			return
