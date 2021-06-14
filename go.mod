@@ -3,7 +3,6 @@ module github.com/ovotech/iam-service-account-controller
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.38.46
 	github.com/aws/aws-sdk-go-v2 v1.6.0
 	github.com/aws/aws-sdk-go-v2/config v1.3.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.2.1
