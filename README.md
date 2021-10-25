@@ -33,7 +33,7 @@ metadata:
 
 the controller will automatically create an IAM role in the same account with an AssumeRolePolicyDocument that allows the ServiceAccount to assume the role:
 
-```json
+```console
 $ aws iam get-role --role-name k8s-sa_bar_foo
 {
     "Role": {
@@ -83,7 +83,7 @@ $ aws iam get-role --role-name k8s-sa_bar_foo
 
 To run locally, ensure you have AWS creds with sufficient permissions in your environment (see permissions required in "Quick setup" section below) and:
 
-```
+```console
 $ aws eks update-kubeconfig --name $CLUSTER_NAME
 
 $ OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
@@ -103,7 +103,7 @@ We assume your EKS cluster is set up for [IAM Roles for service accounts](https:
 
 We first need to create any IAM role for our controller to assume from the cluster:
 
-```json
+```console
 $ NAMESPACE=iam-service-account-controller
 
 $ EKS_CLUSTER_NAME=cluster_name
@@ -165,7 +165,7 @@ $ aws iam put-role-policy \
 
 If you're reading this as an external party: we're not providing images. You'll want to build the image and push it to an image repository accessible to your cluster. Here we're assuming you're set up to push to a private AWS ECR repository that can be accessed by your cluster:
 
-```
+```console
 $ AWS_REGION=eu-west-1
 
 $ REPO_NAME=iam-service-account-controller
@@ -288,7 +288,7 @@ metadata:
 
 you should see:
 
-```log
+```console
 $ kubectl -n iam-service-account-controller logs -f iam-service-account-controller-8595966fb5-12345
 W0602 15:40:33.396159       1 client_config.go:615] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
 I0602 15:40:33.422062       1 controller.go:53] Creating event broadcaster
@@ -308,7 +308,7 @@ I0602 15:44:06.941600       1 event.go:291] "Event occurred" object="default/tes
 
 End-users can check events to help them debug:
 
-```
+```console
 $ kubectl -n default get events
 LAST SEEN   TYPE      REASON            OBJECT                MESSAGE
 46s         Normal    Synced            serviceaccount/test   Successfully synced AWS IAM role
